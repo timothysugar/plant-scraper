@@ -37,13 +37,9 @@ func main() {
 	bulbsDoc := getPage(rhsBaseURL + "/plants/bulbs")
 	urls := findPlantURLs(bulbsDoc)
 	for _, URL := range urls {
-		log.Printf("Requesting page at %v", URL)
 		plantDoc := getPage(URL)
-		plantDoc.Find(".devided-description flex .clr").Each(func(index int, item *goquery.Selection) {
-			relPath, _ := item.Attr("href")
-			urls = append(urls, rhsBaseURL+relPath)
-		})
-		fmt.Printf("%v\n", plantDoc)
+		plantName := findPlantName(plantDoc)
+		fmt.Printf("%v\n", plantName)
 	}
 
 }
