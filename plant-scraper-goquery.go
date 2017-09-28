@@ -1,33 +1,49 @@
 package main
 
 import (
-	"log"
-
 	"fmt"
+	"log"
+	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 )
 
-func getDoc() *goquery.Document {
-	doc, err := goquery.NewDocument("https://www.rhs.org.uk/plants/bulbs")
+const rhsBaseURL = "https://www.rhs.org.uk"
+
+func getPage(url string) *goquery.Document {
+	doc, err := goquery.NewDocument(url)
 	if err != nil {
-		log.Fatal(err)
+		log.Printf("Unable to build doc at url %v, err = %v", url, err)
 	}
 
 	return doc
 }
 
-func postScrape(doc *goquery.Document) []string {
+func findPlantURLs(doc *goquery.Document) []string {
 	var urls []string
 	doc.Find(".posts-list-content .result-details .Plant-formated-Name").Each(func(index int, item *goquery.Selection) {
-		url, _ := item.Attr("href")
-		urls = append(urls, url)
+		relPath, _ := item.Attr("href")
+		urls = append(urls, rhsBaseURL+relPath)
 	})
 	return urls
 }
 
+func findPlantName(doc *goquery.Document) string {
+	name := doc.Find(".Plant-formated-Name").First().Text()
+	return strings.TrimSpace(name)
+}
+
 func main() {
-	doc := getDoc()
-	urls := postScrape(doc)
-	fmt.Println(urls)
+	bulbsDoc := getPage(rhsBaseURL + "/plants/bulbs")
+	urls := findPlantURLs(bulbsDoc)
+	for _, URL := range urls {
+		log.Printf("Requesting page at %v", URL)
+		plantDoc := getPage(URL)
+		plantDoc.Find(".devided-description flex .clr").Each(func(index int, item *goquery.Selection) {
+			relPath, _ := item.Attr("href")
+			urls = append(urls, rhsBaseURL+relPath)
+		})
+		fmt.Printf("%v\n", plantDoc)
+	}
+
 }
